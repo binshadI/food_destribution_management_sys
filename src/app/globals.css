@@ -10,6 +10,12 @@
   --color-cream-100: #f6f2e7;
   --color-cream-200: #efe8d7;
 
+  /* Page / panel neutrals (dashboard) */
+  --color-sage-50: #f3f6f1;
+  --color-sage-100: #e9efe5;
+  --color-sage-200: #d8e3d2;
+  --color-sage-300: #c2d3ba;
+
   /* Deep forest green */
   --color-forest-50: #eef7f1;
   --color-forest-100: #d6ecdd;
@@ -39,8 +45,10 @@
 
   /* Text */
   --color-charcoal: #23211c;
-  --color-charcoal-600: #555149;
+  --color-charcoal-100: #f0ece7;
   --color-charcoal-400: #7c776d;
+  --color-charcoal-500: #5a564c;
+  --color-charcoal-600: #555149;
 
   --shadow-soft: 0 1px 2px rgba(20, 61, 41, 0.04),
     0 14px 34px -16px rgba(20, 61, 41, 0.2);
