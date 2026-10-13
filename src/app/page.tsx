@@ -2,7 +2,6 @@ import { Faq } from "@/components/landing/faq";
 import { Hero } from "@/components/landing/hero";
 import { Metrics } from "@/components/landing/metrics";
 import { Roles } from "@/components/landing/roles";
-import { SignupCta } from "@/components/landing/signup-cta";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 import { Steps } from "@/components/landing/steps";
@@ -30,7 +29,6 @@ export default function Home() {
         <Stories />
         <Testimonial />
         <Trust />
-        <SignupCta />
         <Faq />
       </main>
 

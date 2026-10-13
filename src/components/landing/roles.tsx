@@ -104,7 +104,7 @@ export function Roles() {
                     {role.body}
                   </p>
                   <a
-                    href="#join"
+                    href="/register"
                     className={`mt-6 inline-flex items-center gap-1.5 text-sm font-semibold transition ${tone.link}`}
                   >
                     {role.link}

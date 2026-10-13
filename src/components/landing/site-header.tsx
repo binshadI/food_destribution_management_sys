@@ -76,9 +76,9 @@ export function SiteHeader() {
           >
             Log in
           </Link>
-          <a href="#join" className={btnPrimary}>
+          <Link href="/register" className={btnPrimary}>
             Get started
-          </a>
+          </Link>
         </div>
 
         <button
@@ -121,13 +121,13 @@ export function SiteHeader() {
             >
               Log in
             </Link>
-            <a
-              href="#join"
+            <Link
+              href="/register"
               onClick={() => setOpen(false)}
               className={btnPrimary}
             >
               Get started
-            </a>
+            </Link>
           </div>
         </nav>
       </div>
