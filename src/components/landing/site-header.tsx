@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BrandMark, Close, Menu } from "./icons";
 import { btnPrimary } from "./ui";
@@ -69,12 +70,12 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <a
-            href="#join"
+          <Link
+            href="/login"
             className="rounded-full px-4 py-2 text-sm font-semibold text-forest-800 transition hover:bg-mint-100"
           >
             Log in
-          </a>
+          </Link>
           <a href="#join" className={btnPrimary}>
             Get started
           </a>
@@ -113,13 +114,13 @@ export function SiteHeader() {
             ))}
           </ul>
           <div className="mt-3 grid grid-cols-2 gap-3 border-t border-forest-900/8 pt-4">
-            <a
-              href="#join"
+            <Link
+              href="/login"
               onClick={() => setOpen(false)}
               className="inline-flex items-center justify-center rounded-full border border-forest-200 bg-white px-5 py-3 text-sm font-semibold text-forest-900 transition hover:bg-mint-50"
             >
               Log in
-            </a>
+            </Link>
             <a
               href="#join"
               onClick={() => setOpen(false)}
