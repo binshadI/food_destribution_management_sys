@@ -19,8 +19,7 @@ import {
   CATEGORIES,
   REQUEST_DRAFT_KEY,
   URGENCIES,
-  formatNeededBy,
-  type NewRequestInput,
+  type FoodRequest,
   type RequestCategory,
   type Urgency,
 } from "./types";
@@ -59,7 +58,7 @@ function FieldError({ message }: { message?: string }) {
 export function NewRequestForm({
   onAdd,
 }: {
-  onAdd: (input: NewRequestInput) => void;
+  onAdd: (request: FoodRequest) => void;
 }) {
   const toast = useToast();
   const user = useSession();
@@ -83,7 +82,7 @@ export function NewRequestForm({
     return next;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = validate();
     setErrors(next);
@@ -106,18 +105,51 @@ export function NewRequestForm({
     }
 
     setSubmitting(true);
-    onAdd({
-      food: values.food.trim(),
-      category: values.category,
-      servings: Math.round(Number(values.servings)),
-      neededBy: formatNeededBy(values.date, values.time),
-      urgency: values.urgency,
-      area: values.area.trim(),
-      note: values.note.trim(),
-    });
-    setValues(EMPTY);
-    setErrors({});
-    setSubmitting(false);
+    try {
+      const response = await fetch("/api/food-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          title: values.food.trim(),
+          category: values.category,
+          quantityServings: Math.round(Number(values.servings)),
+          neededByDate: values.date,
+          neededByTime: values.time,
+          urgency: values.urgency,
+          deliveryArea: values.area.trim(),
+          notes: values.note.trim(),
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { request?: FoodRequest; error?: string }
+        | null;
+
+      if (!response.ok || !data?.request) {
+        throw new Error(data?.error ?? "Something went wrong.");
+      }
+
+      onAdd(data.request);
+      setValues(EMPTY);
+      setErrors({});
+      toast({
+        tone: "success",
+        title: "Request posted",
+        description: "We're matching your request with nearby donors now.",
+      });
+    } catch (error: unknown) {
+      toast({
+        tone: "error",
+        title: "Couldn't post request",
+        description:
+          error instanceof Error && error.message
+            ? error.message
+            : "Something went wrong. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleSaveDraft() {
