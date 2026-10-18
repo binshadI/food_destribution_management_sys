@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StatCard } from "@/components/ui/stat-card";
 import { Banner } from "@/components/ui/banner";
 import { useToast } from "@/components/ui/toast";
@@ -13,18 +13,60 @@ import {
   Utensils,
 } from "@/components/ui/icons";
 import { eyebrow } from "@/components/ui/styles";
-import { useLocalStore } from "@/lib/local-store";
 import { firstName, useSession } from "@/lib/session";
 import { ActiveRequestCard, VerificationCard } from "./active-request-card";
 import { NewRequestForm } from "./new-request-form";
 import { RequestsTable } from "./requests-table";
-import { requestsStore } from "./store";
-import type { FoodRequest, NewRequestInput } from "./types";
+import type { FoodRequest } from "./types";
 
 export function ReceiverDashboard() {
   const toast = useToast();
   const user = useSession();
-  const [requests, setRequests] = useLocalStore(requestsStore);
+  const [requests, setRequests] = useState<FoodRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRequests() {
+      if (!user) {
+        setRequests([]);
+        setRequestsLoading(false);
+        return;
+      }
+      setRequestsLoading(true);
+      try {
+        const response = await fetch(`/api/food-requests?userId=${user.id}`);
+        const data = (await response.json().catch(() => null)) as {
+          requests?: FoodRequest[];
+          error?: string;
+        } | null;
+        if (cancelled) return;
+        if (!response.ok || !data) {
+          throw new Error(data?.error ?? "Could not load requests.");
+        }
+        setRequests(data.requests ?? []);
+      } catch (error: unknown) {
+        if (cancelled) return;
+        setRequests([]);
+        toast({
+          tone: "error",
+          title: "Couldn't load requests",
+          description:
+            error instanceof Error && error.message
+              ? error.message
+              : "Something went wrong.",
+        });
+      } finally {
+        if (!cancelled) setRequestsLoading(false);
+      }
+    }
+
+    loadRequests();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, toast]);
 
   const activeRequest = useMemo(
     () =>
@@ -38,32 +80,8 @@ export function ReceiverDashboard() {
     (request) => request.status === "Pending",
   ).length;
 
-  function addRequest(input: NewRequestInput) {
-    setRequests((prev) => {
-      const maxId = prev.reduce(
-        (max, request) =>
-          Math.max(max, Number(request.id.replace(/\D/g, "")) || 0),
-        0,
-      );
-      const request: FoodRequest = {
-        id: `SS-RQ-${String(maxId + 1).padStart(4, "0")}`,
-        food: input.food,
-        category: input.category,
-        servings: input.servings,
-        neededBy: input.neededBy,
-        urgency: input.urgency,
-        area: input.area,
-        status: "Pending",
-        donor: "Awaiting match",
-        note: input.note || undefined,
-      };
-      return [request, ...prev];
-    });
-    toast({
-      tone: "success",
-      title: "Request posted",
-      description: "We're matching your request with nearby donors now.",
-    });
+  function addRequest(request: FoodRequest) {
+    setRequests((prev) => [request, ...prev]);
   }
 
   return (
@@ -139,7 +157,13 @@ export function ReceiverDashboard() {
         </div>
       </div>
 
-      <RequestsTable requests={requests} />
+      {requestsLoading ? (
+        <p className="rounded-2xl border border-sage-200 bg-white px-5 py-8 text-center text-sm text-charcoal-600">
+          Loading your requests…
+        </p>
+      ) : (
+        <RequestsTable requests={requests} />
+      )}
 
       <div className="flex items-center gap-2 px-1 text-xs text-charcoal-400">
         <Clock className="size-3.5" />

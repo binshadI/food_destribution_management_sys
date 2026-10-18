@@ -307,10 +307,10 @@ export default function LoginPage() {
           <p className="mt-6 text-center text-sm text-charcoal-600">
             New to Second Serving?{" "}
             <Link
-              href="/#join"
+              href="/register"
               className="font-semibold text-forest-700 underline underline-offset-4 transition hover:text-forest-900"
             >
-              Join the network
+              Create an account
             </Link>
           </p>
         </div>

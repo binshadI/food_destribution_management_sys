@@ -54,7 +54,7 @@ export function Hero() {
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <a href="#join" className={btnPrimary}>
+            <a href="/register" className={btnPrimary}>
               Get started
               <ArrowRight className="size-4" />
             </a>
