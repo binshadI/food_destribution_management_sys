@@ -19,8 +19,7 @@ import {
   CATEGORIES,
   REQUEST_DRAFT_KEY,
   URGENCIES,
-  formatNeededBy,
-  type NewRequestInput,
+  type FoodRequest,
   type RequestCategory,
   type Urgency,
 } from "./types";

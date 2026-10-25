@@ -24,7 +24,7 @@ const NAV_GROUPS = [
     links: [
       { label: "For donors", href: "#donors" },
       { label: "For NGOs", href: "#ngos" },
-      { label: "Volunteer", href: "#join" },
+      { label: "Volunteer", href: "/register" },
       { label: "FAQ", href: "#faq" },
     ],
   },
@@ -52,7 +52,7 @@ export function SiteFooter() {
             </p>
           </div>
           <div className="flex lg:justify-end">
-            <a href="#join" className={btnAmber}>
+            <a href="/register" className={btnAmber}>
               Get started
               <ArrowRight className="size-4" />
             </a>

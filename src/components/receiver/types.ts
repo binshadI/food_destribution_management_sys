@@ -50,8 +50,18 @@ export function formatServings(servings: number): string {
 
 export function formatNeededBy(date: string, time: string): string {
   if (!date) return time ? `Today · ${time}` : "Not set";
-  const parsed = new Date(`${date}T${time || "00:00"}:00`);
-  if (Number.isNaN(parsed.getTime())) return date;
+  return formatNeededByDate(new Date(`${date}T${time || "00:00"}:00`), date);
+}
+
+export function formatNeededByDate(
+  value: string | Date,
+  fallback = "Not set",
+): string {
+  const parsed =
+    value instanceof Date
+      ? new Date(value)
+      : new Date(value.length <= 10 ? `${value}T00:00:00` : value);
+  if (Number.isNaN(parsed.getTime())) return fallback;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -71,5 +81,9 @@ export function formatNeededBy(date: string, time: string): string {
       month: "short",
     });
 
-  return time ? `${label} · ${time}` : label;
+  const time = parsed.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return time && time !== "00:00" ? `${label} · ${time}` : label;
 }
