@@ -59,7 +59,7 @@ function FieldError({ message }: { message?: string }) {
 export function NewRequestForm({
   onAdd,
 }: {
-  onAdd: (input: NewRequestInput) => void;
+  onAdd: (input: NewRequestInput) => void | Promise<void>;
 }) {
   const toast = useToast();
   const user = useSession();
@@ -83,7 +83,7 @@ export function NewRequestForm({
     return next;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = validate();
     setErrors(next);
@@ -106,18 +106,25 @@ export function NewRequestForm({
     }
 
     setSubmitting(true);
-    onAdd({
-      food: values.food.trim(),
-      category: values.category,
-      servings: Math.round(Number(values.servings)),
-      neededBy: formatNeededBy(values.date, values.time),
-      urgency: values.urgency,
-      area: values.area.trim(),
-      note: values.note.trim(),
-    });
-    setValues(EMPTY);
-    setErrors({});
-    setSubmitting(false);
+    try {
+      await onAdd({
+        food: values.food.trim(),
+        category: values.category,
+        servings: Math.round(Number(values.servings)),
+        date: values.date,
+        time: values.time,
+        neededBy: formatNeededBy(values.date, values.time),
+        urgency: values.urgency,
+        area: values.area.trim(),
+        note: values.note.trim(),
+      });
+      setValues(EMPTY);
+      setErrors({});
+    } catch {
+      // The dashboard surfaces the API error; keep the entered values.
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleSaveDraft() {

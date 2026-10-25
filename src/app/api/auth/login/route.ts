@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error: `This account is registered as a ${user.role}. Switch to the ${user.role} tab to continue.`,
+          role: user.role,
         },
         { status: 403 },
       );

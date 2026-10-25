@@ -11,6 +11,7 @@ export type Listing = {
   quantity: string;
   expiry: string;
   receiver: string;
+  volunteer?: string | null;
   status: ListingStatus;
   category?: string;
 };
