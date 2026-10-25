@@ -1,6 +1,7 @@
 import type { Listing, ListingStatus } from "@/components/donor/types";
 import { formatExpiry } from "@/components/donor/types";
 import { query } from "@/lib/db";
+import { runMatches } from "@/lib/matching";
 
 type FoodItemRow = {
   food_id: number;
@@ -11,6 +12,9 @@ type FoodItemRow = {
   expiry_datetime: string | Date;
   status: "available" | "matched" | "completed" | "expired";
   pickup_address: string;
+  receiver_name: string | null;
+  volunteer_name: string | null;
+  task_status: "open" | "accepted" | "picked_up" | "delivered" | "cancelled" | null;
 };
 
 type InsertResult = { insertId: number; affectedRows: number };
@@ -44,16 +48,37 @@ function formatQuantity(
 }
 
 function toListing(row: FoodItemRow): Listing {
+  const volunteerAccepted =
+    row.task_status === "accepted" ||
+    row.task_status === "picked_up" ||
+    row.task_status === "delivered";
+
   return {
     id: `SS-${String(row.food_id).padStart(4, "0")}`,
     food: row.title,
     quantity: formatQuantity(row.quantity_servings, row.quantity_kg),
     expiry: formatExpiry(row.expiry_datetime),
-    receiver: "Awaiting matching",
+    receiver: row.receiver_name ?? "Awaiting matching",
+    volunteer: volunteerAccepted ? row.volunteer_name : null,
     status: STATUS_FROM_DB[row.status] ?? "Available",
     category: CATEGORY_FROM_DB[row.category] ?? "Cooked",
   };
 }
+
+const SELECT_ITEM = `
+  SELECT f.food_id, f.title, f.category, f.quantity_servings, f.quantity_kg,
+         f.expiry_datetime, f.status, f.pickup_address,
+         COALESCE(rc.organization_name, ru.name) AS receiver_name,
+         vu.name AS volunteer_name,
+         p.status AS task_status
+    FROM food_items f
+    LEFT JOIN pickup_deliveries p
+           ON p.food_id = f.food_id AND p.status <> 'cancelled'
+    LEFT JOIN food_requests r ON r.request_id = p.request_id
+    LEFT JOIN receivers rc ON rc.receiver_id = r.receiver_id
+    LEFT JOIN users ru ON ru.user_id = rc.user_id
+    LEFT JOIN volunteers v ON v.volunteer_id = p.volunteer_id
+    LEFT JOIN users vu ON vu.user_id = v.user_id`;
 
 export async function GET(request: Request) {
   const userId = Number(new URL(request.url).searchParams.get("userId"));
@@ -64,12 +89,10 @@ export async function GET(request: Request) {
 
   try {
     const rows = await query<FoodItemRow[]>(
-      `SELECT f.food_id, f.title, f.category, f.quantity_servings, f.quantity_kg,
-              f.expiry_datetime, f.status, f.pickup_address
-         FROM food_items f
-         JOIN donors d ON d.donor_id = f.donor_id
-        WHERE d.user_id = ?
-        ORDER BY f.created_at DESC, f.food_id DESC`,
+      `${SELECT_ITEM}
+       JOIN donors d ON d.donor_id = f.donor_id
+       WHERE d.user_id = ?
+       ORDER BY f.created_at DESC, f.food_id DESC`,
       [userId],
     );
 
@@ -197,10 +220,10 @@ export async function POST(request: Request) {
       ],
     );
 
+    await runMatches();
+
     const created = await query<FoodItemRow[]>(
-      `SELECT food_id, title, category, quantity_servings, quantity_kg,
-              expiry_datetime, status, pickup_address
-         FROM food_items WHERE food_id = ? LIMIT 1`,
+      `${SELECT_ITEM} WHERE f.food_id = ? LIMIT 1`,
       [result.insertId],
     );
 

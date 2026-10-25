@@ -16,7 +16,20 @@ export type FoodRequest = {
   area: string;
   status: RequestStatus;
   donor: string;
+  volunteer?: string | null;
   note?: string;
+};
+
+export type NewRequestInput = {
+  food: string;
+  category: RequestCategory;
+  servings: number;
+  date: string;
+  time: string;
+  neededBy: string;
+  urgency: Urgency;
+  area: string;
+  note: string;
 };
 
 export const CATEGORIES: RequestCategory[] = ["Cooked", "Raw", "Packaged"];
@@ -24,7 +37,6 @@ export const CATEGORIES: RequestCategory[] = ["Cooked", "Raw", "Packaged"];
 export const URGENCIES: Urgency[] = ["Low", "Normal", "High"];
 
 export const REQUEST_DRAFT_KEY = "second-serving:receiver-request-draft";
-
 export const STATUS_TONES: Record<RequestStatus, BadgeTone> = {
   Pending: "amber",
   Matched: "forest",

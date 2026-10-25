@@ -41,12 +41,15 @@ function buildSteps(request: FoodRequest): TimelineStep[] {
     },
     {
       label: "Volunteer assigned",
-      detail: index >= 2 ? "Jordan M. · Cargo bike" : "Assigning soon",
+      detail:
+        index >= 2
+          ? `${request.volunteer ?? "A volunteer"} · accepted`
+          : "Assigning soon",
       state: state(2),
     },
     {
       label: "Out for delivery",
-      detail: index >= 3 ? "Arrived" : "ETA 17:35",
+      detail: index >= 3 ? "Arrived" : index === 2 ? "Awaiting pickup" : "ETA 17:35",
       state: state(3),
     },
     { label: "Received", detail: request.area, state: state(4) },
@@ -116,6 +119,21 @@ export function ActiveRequestCard({ request }: { request: FoodRequest }) {
           <Phone className="size-4" />
         </button>
       </div>
+
+      {request.volunteer ? (
+        <div className="mt-3 flex items-center gap-3 rounded-xl bg-mint-50 px-3 py-2.5">
+          <Avatar name={request.volunteer} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-forest-900">
+              {request.volunteer}
+            </p>
+            <p className="truncate text-xs text-charcoal-400">
+              Volunteer accepted this delivery
+            </p>
+          </div>
+          <Badge tone="forest">Assigned</Badge>
+        </div>
+      ) : null}
 
       <button
         type="button"

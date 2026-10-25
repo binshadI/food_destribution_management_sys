@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/toast";
 import {
   AlertTriangle,
   ArrowRight,
@@ -13,8 +12,6 @@ import {
   MapPin,
 } from "@/components/ui/icons";
 import { btnPrimary, card } from "@/components/ui/styles";
-import { useLocalStore } from "@/lib/local-store";
-import { tasksStore } from "./store";
 import type { DeliveryTask } from "./types";
 
 type TabId = "all" | "nearby" | "urgent";
@@ -31,9 +28,15 @@ function distanceKm(distance: string): number {
   return distance.includes("km") ? value : value / 1000;
 }
 
-export function AvailableTasks() {
-  const toast = useToast();
-  const [tasks, setTasks] = useLocalStore(tasksStore);
+export function AvailableTasks({
+  tasks,
+  loading,
+  onAccept,
+}: {
+  tasks: DeliveryTask[];
+  loading: boolean;
+  onAccept: (task: DeliveryTask) => void;
+}) {
   const [tab, setTab] = useState<TabId>("all");
 
   const visible = useMemo(() => {
@@ -48,19 +51,6 @@ export function AvailableTasks() {
     }
   }, [tasks, tab]);
 
-  function accept(task: DeliveryTask) {
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === task.id ? { ...item, status: "Claimed" } : item,
-      ),
-    );
-    toast({
-      tone: "success",
-      title: "Task accepted",
-      description: `${task.pickup} → ${task.dropoff} is now yours.`,
-    });
-  }
-
   return (
     <section id="tasks" className={`${card} scroll-mt-24 p-6 sm:p-8`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -68,7 +58,7 @@ export function AvailableTasks() {
           Available tasks
         </h2>
         <span className="text-xs font-medium text-charcoal-400">
-          {visible.length} nearby
+          {loading ? "Loading…" : `${visible.length} nearby`}
         </span>
       </div>
 
@@ -76,7 +66,11 @@ export function AvailableTasks() {
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
       </div>
 
-      {visible.length === 0 ? (
+      {loading ? (
+        <p className="mt-8 rounded-2xl border border-sage-200 bg-white px-5 py-10 text-center text-sm text-charcoal-600">
+          Loading matched deliveries…
+        </p>
+      ) : visible.length === 0 ? (
         <div className="mt-8 flex flex-col items-center rounded-2xl border border-dashed border-sage-300 bg-sage-50 px-6 py-12 text-center">
           <span className="grid size-11 place-items-center rounded-full bg-white text-charcoal-400">
             <Inbox className="size-5" />
@@ -108,6 +102,7 @@ export function AvailableTasks() {
                 ) : (
                   <Badge tone={task.status === "Open" ? "amber" : "forest"}>
                     {task.status}
+                    {task.mine && task.status !== "Open" ? " · yours" : ""}
                   </Badge>
                 )}
               </div>
@@ -116,6 +111,11 @@ export function AvailableTasks() {
                 <p className="flex items-center gap-2 text-sm font-semibold text-forest-900">
                   <MapPin className="size-4 shrink-0 text-forest-600" />
                   {task.pickup}
+                  {task.pickupAddress ? (
+                    <span className="truncate text-xs font-normal text-charcoal-400">
+                      {task.pickupAddress}
+                    </span>
+                  ) : null}
                 </p>
                 <p className="flex items-center gap-2 pl-1 text-charcoal-400">
                   <ArrowRight className="size-3.5" />
@@ -123,6 +123,11 @@ export function AvailableTasks() {
                 <p className="flex items-center gap-2 text-sm font-semibold text-forest-900">
                   <MapPin className="size-4 shrink-0 text-forest-600" />
                   {task.dropoff}
+                  {task.dropoffArea ? (
+                    <span className="truncate text-xs font-normal text-charcoal-400">
+                      {task.dropoffArea}
+                    </span>
+                  ) : null}
                 </p>
               </div>
 
@@ -131,8 +136,12 @@ export function AvailableTasks() {
                   <Clock className="size-3.5 text-forest-600" />
                   {task.window}
                 </span>
-                <span className="text-sage-300">•</span>
-                <span>{task.distance}</span>
+                {distanceKm(task.distance) !== Infinity ? (
+                  <>
+                    <span className="text-sage-300">•</span>
+                    <span>{task.distance}</span>
+                  </>
+                ) : null}
                 <span className="text-sage-300">•</span>
                 <span>{task.items}</span>
               </p>
@@ -140,7 +149,7 @@ export function AvailableTasks() {
               {task.status === "Open" ? (
                 <button
                   type="button"
-                  onClick={() => accept(task)}
+                  onClick={() => onAccept(task)}
                   className={`${btnPrimary} mt-4 w-full`}
                 >
                   <Check className="size-4" />
@@ -148,7 +157,9 @@ export function AvailableTasks() {
                 </button>
               ) : (
                 <p className="mt-4 rounded-xl bg-sage-50 px-3 py-2 text-center text-xs font-semibold text-forest-700">
-                  {task.status}
+                  {task.mine && task.status === "Claimed"
+                    ? "Accepted by you"
+                    : task.status}
                 </p>
               )}
             </li>

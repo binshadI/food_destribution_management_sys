@@ -80,20 +80,26 @@ export function DonorDashboard() {
     (listing) =>
       listing.status !== "Delivered" && listing.status !== "Expired",
   ).length;
+  const matchedListings = listings.filter(
+    (listing) => listing.status === "Matched",
+  ).length;
+  const availableListings = listings.filter(
+    (listing) => listing.status === "Available",
+  ).length;
 
   const metrics: Metric[] = [
     {
       label: "Active listings",
       value: String(activeListings),
-      support: "2 matched · 1 available",
+      support: `${matchedListings} matched · ${availableListings} available`,
       supportTone: "muted",
       valueTone: "forest",
       icon: ClipboardList,
     },
     {
       label: "Pending pickups",
-      value: "3",
-      support: "Next collection today, 17:30",
+      value: String(matchedListings),
+      support: "Matched, awaiting collection",
       supportTone: "muted",
       valueTone: "amber",
       icon: Calendar,
@@ -182,21 +188,34 @@ export function DonorDashboard() {
         })}
       </section>
 
-      <div className="flex items-center gap-3 rounded-2xl border border-mint-200 border-l-4 border-l-forest-500 bg-mint-50 p-4 sm:p-5">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-forest-700">
-          <Calendar className="size-[18px]" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-forest-900">
-            A pickup has been scheduled
-          </p>
-          <p className="mt-0.5 text-xs leading-relaxed text-charcoal-600">
-            Saturday, 12 Oct · 17:30 – 18:00 · Meals for Hope Shelter will
-            collect 3 crates from Green Table Kitchen. Please have the food
-            ready and labelled for collection.
-          </p>
-        </div>
-      </div>
+      {(() => {
+        const upcoming = listings.find(
+          (listing) => listing.status === "Matched" || listing.status === "Pending",
+        );
+        if (!upcoming) return null;
+        return (
+          <div className="flex items-center gap-3 rounded-2xl border border-mint-200 border-l-4 border-l-forest-500 bg-mint-50 p-4 sm:p-5">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-forest-700">
+              <Calendar className="size-[18px]" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-forest-900">
+                {upcoming.volunteer
+                  ? "A volunteer accepted your pickup"
+                  : "A pickup has been scheduled"}
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-charcoal-600">
+                {upcoming.receiver} is matched to {upcoming.quantity} of{" "}
+                {upcoming.food.toLowerCase()} ({upcoming.id}, expires{" "}
+                {upcoming.expiry.toLowerCase()}).{" "}
+                {upcoming.volunteer
+                  ? `Volunteer ${upcoming.volunteer} will collect it for ${upcoming.receiver}.`
+                  : `Please have the food ready and labelled for ${upcoming.receiver}.`}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <ShareSurplusForm onPublish={addListing} />

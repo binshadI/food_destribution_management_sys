@@ -58,7 +58,7 @@ function FieldError({ message }: { message?: string }) {
 export function NewRequestForm({
   onAdd,
 }: {
-  onAdd: (request: FoodRequest) => void;
+  onAdd: (input: NewRequestInput) => void | Promise<void>;
 }) {
   const toast = useToast();
   const user = useSession();
@@ -106,47 +106,21 @@ export function NewRequestForm({
 
     setSubmitting(true);
     try {
-      const response = await fetch("/api/food-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          title: values.food.trim(),
-          category: values.category,
-          quantityServings: Math.round(Number(values.servings)),
-          neededByDate: values.date,
-          neededByTime: values.time,
-          urgency: values.urgency,
-          deliveryArea: values.area.trim(),
-          notes: values.note.trim(),
-        }),
+      await onAdd({
+        food: values.food.trim(),
+        category: values.category,
+        servings: Math.round(Number(values.servings)),
+        date: values.date,
+        time: values.time,
+        neededBy: formatNeededBy(values.date, values.time),
+        urgency: values.urgency,
+        area: values.area.trim(),
+        note: values.note.trim(),
       });
-
-      const data = (await response.json().catch(() => null)) as
-        | { request?: FoodRequest; error?: string }
-        | null;
-
-      if (!response.ok || !data?.request) {
-        throw new Error(data?.error ?? "Something went wrong.");
-      }
-
-      onAdd(data.request);
       setValues(EMPTY);
       setErrors({});
-      toast({
-        tone: "success",
-        title: "Request posted",
-        description: "We're matching your request with nearby donors now.",
-      });
-    } catch (error: unknown) {
-      toast({
-        tone: "error",
-        title: "Couldn't post request",
-        description:
-          error instanceof Error && error.message
-            ? error.message
-            : "Something went wrong. Please try again.",
-      });
+    } catch {
+      // The dashboard surfaces the API error; keep the entered values.
     } finally {
       setSubmitting(false);
     }

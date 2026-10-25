@@ -11,6 +11,9 @@ export type DeliveryTask = {
   items: string;
   status: TaskStatus;
   urgent: boolean;
+  pickupAddress?: string;
+  dropoffArea?: string;
+  mine?: boolean;
 };
 
 export type Contact = {
@@ -25,7 +28,6 @@ export type ChecklistItem = {
 };
 
 export const CHECKLIST_KEY = "second-serving:volunteer-checklist";
-export const TASKS_KEY = "second-serving:volunteer-tasks";
 
 export const STATUS_TONES: Record<TaskStatus, BadgeTone> = {
   Open: "amber",
@@ -55,45 +57,3 @@ export const CHECKLIST: ChecklistItem[] = [
   { id: "photo", label: "Take a drop-off confirmation photo" },
 ];
 
-export const SEED_TASKS: DeliveryTask[] = [
-  {
-    id: "SS-TK-2011",
-    pickup: "Green Table Kitchen",
-    dropoff: "Northgate Community Hall",
-    distance: "2.4 km",
-    window: "Today · 17:30 – 18:00",
-    items: "3 crates · 80 meals",
-    status: "In transit",
-    urgent: false,
-  },
-  {
-    id: "SS-TK-2012",
-    pickup: "Corner Bakery",
-    dropoff: "Hope Street Pantry",
-    distance: "1.1 km",
-    window: "Today · 19:00 – 19:30",
-    items: "6 trays · bread & pastry",
-    status: "Open",
-    urgent: true,
-  },
-  {
-    id: "SS-TK-2013",
-    pickup: "Harbour Hotel",
-    dropoff: "Riverside Shelter",
-    distance: "3.8 km",
-    window: "Tomorrow · 09:00 – 09:45",
-    items: "4 crates · 60 meals",
-    status: "Open",
-    urgent: false,
-  },
-  {
-    id: "SS-TK-2014",
-    pickup: "Maple Grocers",
-    dropoff: "St. Anne's Kitchen",
-    distance: "900 m",
-    window: "Tomorrow · 11:15 – 11:45",
-    items: "10 boxes · fresh produce",
-    status: "Open",
-    urgent: false,
-  },
-];

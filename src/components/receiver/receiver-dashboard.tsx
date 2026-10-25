@@ -17,13 +17,14 @@ import { firstName, useSession } from "@/lib/session";
 import { ActiveRequestCard, VerificationCard } from "./active-request-card";
 import { NewRequestForm } from "./new-request-form";
 import { RequestsTable } from "./requests-table";
-import type { FoodRequest } from "./types";
+import type { FoodRequest, NewRequestInput } from "./types";
 
 export function ReceiverDashboard() {
   const toast = useToast();
   const user = useSession();
   const [requests, setRequests] = useState<FoodRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,10 +32,9 @@ export function ReceiverDashboard() {
     async function loadRequests() {
       if (!user) {
         setRequests([]);
-        setRequestsLoading(false);
+        setLoading(false);
         return;
       }
-      setRequestsLoading(true);
       try {
         const response = await fetch(`/api/food-requests?userId=${user.id}`);
         const data = (await response.json().catch(() => null)) as {
@@ -58,7 +58,7 @@ export function ReceiverDashboard() {
               : "Something went wrong.",
         });
       } finally {
-        if (!cancelled) setRequestsLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -66,12 +66,12 @@ export function ReceiverDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [user, toast]);
+  }, [user, refreshToken, toast]);
 
   const activeRequest = useMemo(
     () =>
-      requests.find((request) => request.status === "Matched") ??
       requests.find((request) => request.status === "Ready") ??
+      requests.find((request) => request.status === "Matched") ??
       requests[0],
     [requests],
   );
@@ -80,8 +80,60 @@ export function ReceiverDashboard() {
     (request) => request.status === "Pending",
   ).length;
 
-  function addRequest(request: FoodRequest) {
-    setRequests((prev) => [request, ...prev]);
+  const latestUpdate = useMemo(
+    () =>
+      requests.find((request) => request.status === "Ready") ??
+      requests.find((request) => request.status === "Matched"),
+    [requests],
+  );
+
+  async function addRequest(input: NewRequestInput) {
+    if (!user) throw new Error("Please sign in again to post a request.");
+
+    const response = await fetch("/api/food-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        title: input.food,
+        category: input.category,
+        quantityServings: input.servings,
+        neededByDate: input.date,
+        neededByTime: input.time,
+        urgency: input.urgency,
+        deliveryArea: input.area,
+        notes: input.note,
+      }),
+    });
+
+    const data = (await response.json().catch(() => null)) as {
+      request?: FoodRequest;
+      error?: string;
+    } | null;
+
+    if (!response.ok || !data) {
+      throw new Error(data?.error ?? "Could not post your request.");
+    }
+
+    if (data.request) {
+      setRequests((prev) => [data.request as FoodRequest, ...prev]);
+    } else {
+      setRefreshToken((token) => token + 1);
+    }
+
+    if (data.request?.status === "Matched") {
+      toast({
+        tone: "success",
+        title: "Request matched",
+        description: `${data.request.donor} can supply ${data.request.servings} servings for ${data.request.area}.`,
+      });
+    } else {
+      toast({
+        tone: "success",
+        title: "Request posted",
+        description: "We're matching your request with nearby donors now.",
+      });
+    }
   }
 
   return (
@@ -112,39 +164,58 @@ export function ReceiverDashboard() {
         />
         <StatCard
           label="Matched this month"
-          value="12"
-          support="+4 vs last month"
+          value={String(
+            requests.filter((request) => request.status !== "Pending").length,
+          )}
+          support="Matched or delivered"
           supportTone="green"
           tone="forest"
           icon={HeartHandshake}
         />
         <StatCard
           label="Meals received"
-          value="1,860"
+          value={String(
+            requests
+              .filter((request) => request.status === "Received")
+              .reduce((total, request) => total + request.servings, 0),
+          )}
           support="All time"
           tone="mint"
           icon={Utensils}
         />
         <StatCard
-          label="People served"
-          value="640"
-          support="Across 3 locations"
+          label="Ready for pickup"
+          value={String(
+            requests.filter((request) => request.status === "Ready").length,
+          )}
+          support="Volunteer accepted"
+          supportTone="muted"
           tone="forest"
           icon={Leaf}
         />
       </section>
 
-      <Banner
-        icon={<CheckCircle className="size-[18px]" />}
-        title="New match confirmed"
-        description="Green Table Kitchen will provide 80 vegetable biryani meals today at 18:00 for Northgate Community Hall."
-        action="Track request"
-        onAction={() => {
-          document
-            .getElementById("active")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }}
-      />
+      {latestUpdate ? (
+        <Banner
+          icon={<CheckCircle className="size-[18px]" />}
+          title={
+            latestUpdate.status === "Ready"
+              ? "Volunteer on the way"
+              : "New match confirmed"
+          }
+          description={
+            latestUpdate.status === "Ready"
+              ? `${latestUpdate.volunteer ?? "A volunteer"} accepted your ${latestUpdate.servings} serving ${latestUpdate.food.toLowerCase()} pickup from ${latestUpdate.donor} for ${latestUpdate.area}.`
+              : `${latestUpdate.donor} will provide ${latestUpdate.servings} servings of ${latestUpdate.food.toLowerCase()} for ${latestUpdate.area} — needed by ${latestUpdate.neededBy.toLowerCase()}.`
+          }
+          action="Track request"
+          onAction={() => {
+            document
+              .getElementById("active")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <NewRequestForm onAdd={addRequest} />
@@ -157,7 +228,7 @@ export function ReceiverDashboard() {
         </div>
       </div>
 
-      {requestsLoading ? (
+      {loading ? (
         <p className="rounded-2xl border border-sage-200 bg-white px-5 py-8 text-center text-sm text-charcoal-600">
           Loading your requests…
         </p>

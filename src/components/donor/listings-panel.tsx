@@ -39,13 +39,14 @@ export function ListingsPanel({ listings }: { listings: Listing[] }) {
   );
 
   function exportCsv() {
-    const header = ["ID", "Food", "Quantity", "Expiry", "Receiver", "Status"];
+    const header = ["ID", "Food", "Quantity", "Expiry", "Receiver", "Volunteer", "Status"];
     const rows = visible.map((listing) => [
       listing.id,
       listing.food,
       listing.quantity,
       listing.expiry,
       listing.receiver,
+      listing.volunteer ?? "",
       listing.status,
     ]);
     const csv = [header, ...rows]
@@ -163,6 +164,11 @@ export function ListingsPanel({ listings }: { listings: Listing[] }) {
                     </td>
                     <td className="px-4 py-4 text-charcoal-600">
                       {listing.receiver}
+                      {listing.volunteer ? (
+                        <span className="mt-0.5 block text-xs font-medium text-forest-700">
+                          Volunteer {listing.volunteer} accepted
+                        </span>
+                      ) : null}
                     </td>
                     <td className="py-4 pl-4">
                       <StatusBadge status={listing.status} />
@@ -209,6 +215,14 @@ export function ListingsPanel({ listings }: { listings: Listing[] }) {
                       {listing.receiver}
                     </dd>
                   </div>
+                  {listing.volunteer ? (
+                    <div className="col-span-3">
+                      <dt className="text-charcoal-400">Volunteer</dt>
+                      <dd className="mt-0.5 font-medium text-forest-700">
+                        {listing.volunteer} accepted this pickup
+                      </dd>
+                    </div>
+                  ) : null}
                 </dl>
               </li>
             ))}

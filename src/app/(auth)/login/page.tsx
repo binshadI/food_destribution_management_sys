@@ -49,7 +49,7 @@ const DEMO_ACCOUNTS: { role: Role; email: string }[] = [
   { role: "volunteer", email: "arun@fw.org" },
 ];
 
-type LoginResponse = { user?: SessionUser; error?: string };
+type LoginResponse = { user?: SessionUser; error?: string; role?: string };
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,13 +79,22 @@ export default function LoginPage() {
       const data = (await response.json()) as LoginResponse;
 
       if (!response.ok || !data.user) {
-        setError(data.error ?? "Unable to sign you in. Please try again.");
+        const message =
+          data.error ?? "Unable to sign you in. Please try again.";
+        if (data.role && data.role !== role && data.role !== "admin") {
+          setRole(data.role as Role);
+          setError(
+            `${message} The ${data.role} tab is now selected — press Sign in again.`,
+          );
+        } else {
+          setError(message);
+        }
         setPending(false);
         return;
       }
 
       setSession(data.user);
-      router.push(roleHomePath(data.user.role));
+      router.replace(roleHomePath(data.user.role));
     } catch {
       setError("We couldn't reach the server. Check your connection and retry.");
       setPending(false);
